@@ -10,6 +10,50 @@ import { Agent } from "../src/agent.js";
 import type { Contrato, Ctx, Result, Validation } from "../src/types.js";
 import type { LlmAdapter } from "../src/llm/adapter.js";
 
+test("El lote conserva las herramientas y termina sin otra ronda de herramientas del modelo", async () => {
+  const ctx = await setup();
+  try {
+    let requests = 0;
+    const adapter: LlmAdapter = {
+      async enviar(messages, available) {
+        requests++;
+        if (requests === 1) {
+          assert.ok(available.contratos_procesar_buzon);
+          return {
+            content: null,
+            calls: [
+              {
+                id: "batch-1",
+                name: "contratos_procesar_buzon",
+                arguments: { hoy: "2026-09-03" },
+              },
+            ],
+            tokens: 100,
+          };
+        }
+        assert.equal(Object.keys(available).length, 0);
+        assert.equal(messages.at(-1)?.role, "tool");
+        return {
+          content:
+            "Los contratos claros fueron registrados. Falta confirmar el contrato marco.",
+          calls: [],
+          tokens: 100,
+        };
+      },
+    };
+    const a = new Agent(ctx.directory, "test", adapter),
+      s = await a.session(),
+      r = await a.turn(s, "Procesa el buzón");
+    assert.equal(requests, 2);
+    assert.equal(r.toolCalls.length, 20);
+    assert.equal(r.pending.length, 1);
+    assert.equal((await rows(ctx)).length, 10);
+    assert.equal((await processed(ctx)).length, 5);
+  } finally {
+    await fs.rm(ctx.directory, { recursive: true, force: true });
+  }
+});
+
 test("Un correo corrupto no impide listar ni procesar los demás", async () => {
   const ctx = await setup();
   try {

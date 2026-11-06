@@ -42,7 +42,7 @@ export class QwenAdapter implements LlmAdapter {
     const base = process.env.LLM_BASE_URL;
     if (!base) throw new Error("Falta LLM_BASE_URL del proveedor de tu clave.");
     const options = base.includes("api.groq.com")
-      ? { reasoning_effort: "none", max_completion_tokens: 2500 }
+      ? { reasoning_effort: "none", max_completion_tokens: 1200 }
       : { enable_thinking: false, max_tokens: 2500 };
     const resp = await fetch(base.replace(/\/$/, "") + "/chat/completions", {
       method: "POST",
@@ -54,20 +54,28 @@ export class QwenAdapter implements LlmAdapter {
       body: JSON.stringify({
         model: process.env.LLM_MODEL ?? "qwen/qwen3.8-27b",
         messages,
-        tools: Object.entries(tools).map(([name, t]) => ({
-          type: "function",
-          function: {
-            name,
-            description: t.description,
-            parameters: zodToJsonSchema(z.object(t.args), {
-              $refStrategy: "none",
-            }),
-          },
-        })),
+        ...(Object.keys(tools).length
+          ? {
+              tools: Object.entries(tools).map(([name, t]) => ({
+                type: "function",
+                function: {
+                  name,
+                  description: t.description,
+                  parameters: zodToJsonSchema(z.object(t.args), {
+                    $refStrategy: "none",
+                  }),
+                },
+              })),
+            }
+          : { tool_choice: "none" }),
         ...options,
         temperature: 0,
       }),
     });
+    if (resp.status === 429)
+      throw new Error(
+        "Groq alcanzó el límite de uso de esta cuenta. Esperá un minuto y volvé a intentar; tu clave puede ser válida aunque la cuota esté agotada.",
+      );
     if (!resp.ok)
       throw new Error(
         `El proveedor del modelo respondió HTTP ${resp.status}. Revisá modelo, URL, cuota y clave en el backend.`,

@@ -1,6 +1,6 @@
 # Solución del reto 02
 
-**Despliegue actualizado:** la app está publicada en https://reto-contratos-ia.vercel.app con un proyecto separado de Supabase Free. El almacenamiento cloud descrito en DESPLIEGUE.md conserva archivos, contratos y sesiones entre publicaciones; el modo local sigue disponible para cumplir demo.ts. La conexión real a Qwen sigue pendiente de configurar la clave.
+**Despliegue actualizado:** la app está publicada en https://reto-contratos-ia.vercel.app con un proyecto separado de Supabase Free. El almacenamiento cloud descrito en DESPLIEGUE.md conserva archivos, contratos y sesiones entre publicaciones; el modo local sigue disponible para cumplir demo.ts. La conexión real a Qwen en Groq fue configurada y probada con los seis casos y la confirmación humana.
 
 ## 1. Problema y usuario
 
@@ -32,9 +32,11 @@ Los datos registrados deben coincidir con la extracción determinista o una revi
 
 Las instrucciones dentro de contratos o correos son contenido no confiable. El prompt prohíbe obedecerlas y el backend limita las operaciones a herramientas conocidas. No se ejecuta shell desde herramientas.
 
+Para reducir el consumo de la cuenta gratuita, Qwen puede elegir `contratos_procesar_buzon`: el backend encadena las mismas herramientas obligatorias y expone todas sus llamadas en la actividad. Los casos dudosos siguen pendientes y las escrituras siguen validadas. Después del lote se deshabilitan nuevas herramientas para esa ronda y se pide al modelo explicar el resultado, evitando procesamientos repetidos. Las herramientas individuales se conservan para consultas puntuales.
+
 ## 4. Elección del modelo y costos
 
-La propuesta inicial era Qwen3.5 Plus en Alibaba. Al inspeccionar la configuración —sin copiar secretos— de las apps del candidato se identificó Qwen vía Groq. Para reutilizar su proveedor conocido, el valor de ejemplo es **qwen/qwen3.8-27b**, `reasoning_effort=none`, temperatura 0. Alibaba permanece soportado configurando su endpoint y modelo. Esto es una decisión para el prototipo y requiere prueba real con una clave válida.
+La propuesta inicial era Qwen3.5 Plus en Alibaba. Al inspeccionar la configuración —sin copiar secretos— de las apps del candidato se identificó Qwen vía Groq. Para reutilizar su proveedor conocido, el valor de ejemplo es **qwen/qwen3.8-27b**, `reasoning_effort=none`, temperatura 0. Alibaba permanece soportado configurando su endpoint y modelo. La conexión real se probó con la clave del candidato, almacenada cifrada en Vercel.
 
 El modelo coordina y comunica; las reglas y los valores monetarios no quedan a su criterio. Su utilidad es pedir operaciones en lenguaje natural y explicar excepciones con evidencia. La extracción de estos seis textos no requiere razonamiento generativo.
 
@@ -87,7 +89,7 @@ Los documentos son ficticios y legibles. No se implementa OCR, buzón corporativ
 | Alertar              | Hecho como reporte                  | Programación, responsables y entrega externa    |
 | Manejo de errores    | Hecho para escenarios probados      | Telemetría central, soporte y ensayos de fallos |
 
-El modo real requiere configurar una clave y completar la prueba end-to-end con el proveedor. El acceso público ya fue habilitado con aprobación explícita y se probó el recorrido desde el enlace. Las verificaciones de persistencia cloud se documentan por separado; no equivalen a probar Qwen.
+El modo real fue probado end-to-end con Qwen vía Groq. El acceso público ya fue habilitado con aprobación explícita y se probó el recorrido desde el enlace. Las verificaciones de persistencia cloud se documentan por separado; no equivalen a probar Qwen.
 
 ## 10. Uso de IA
 

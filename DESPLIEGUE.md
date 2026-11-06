@@ -4,7 +4,7 @@
 
 - App y backend: proyecto Vercel `reto-contratos-ia`, Node 24, máximo 300 segundos por petición.
 - Datos: proyecto Supabase independiente `reto-contratos-ia` (`orlwzamtsmirpzsrmalv`), organización Free. No se reutilizan tablas de otras apps.
-- Modelo: el despliegue empieza identificado como práctica sin IA. Qwen vía Groq requiere la clave del candidato en las variables cifradas del backend.
+- Modelo: Qwen vía Groq (`qwen/qwen3.8-27b`) configurado mediante `LLM_PROVIDER=groq` y la clave del candidato cifrada en el backend. El modo de práctica sigue disponible como alternativa explícita.
 
 ## Qué conserva la base
 
@@ -23,6 +23,8 @@ RLS habilitado. Una clave publicable por sí sola no puede leer ni escribir el e
 La capacidad se almacena cifrada como `STORAGE_ACCESS_TOKEN` en Vercel. Para rotarla, generar una nueva, cambiar su hash en la fila usando el panel autorizado de Supabase, actualizar la variable cifrada y volver a publicar. No guardar el valor en Git. Este mecanismo habilita exclusivamente la demo; una aplicación con usuarios y datos reales requiere autenticación y autorización por usuario/organización.
 
 ## Mantenimiento
+
+La cuenta de Groq probada tiene un límite de 8.000 tokens por minuto para este modelo. La operación `contratos_procesar_buzon` ejecuta las herramientas deterministas en un lote y luego Qwen explica el resultado, usando normalmente dos llamadas al modelo. Si Groq responde 429, la app informa la limitación; esperar a que la cuota se reponga antes de reintentar. No se confunde ese estado con una clave inválida.
 
 1. Revisar `GET /api/state`: almacenamiento, revisión, número de contratos, correos procesados y sesiones.
 2. Descargar `/api/master` y `/api/report` después de una defensa. Desde el panel de Supabase se puede exportar la fila de estado para una copia completa. El proyecto Free no sustituye una política corporativa de respaldos.

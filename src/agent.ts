@@ -5,6 +5,8 @@ import { tools } from "./tools/contratos.js";
 import { log } from "./storage.js";
 import { extract } from "./extract.js";
 import { QwenAdapter, type LlmAdapter } from "./llm/adapter.js";
+import { z } from "zod";
+import { validDate } from "./storage.js";
 import type {
   Confirmation,
   Contrato,
@@ -12,6 +14,7 @@ import type {
   Message,
   ToolCall,
   Validation,
+  Tool,
 } from "./types.js";
 
 export type Trace = {
@@ -70,9 +73,15 @@ export class Agent {
     this.sessions.set(s.id, s);
     return s;
   }
-  async call(s: Session, t: ToolCall, traces: Trace[], ctx: Ctx) {
+  async call(
+    s: Session,
+    t: ToolCall,
+    traces: Trace[],
+    ctx: Ctx,
+    availableTools: Record<string, Tool> = tools,
+  ) {
     let raw: string;
-    const tool = tools[t.name];
+    const tool = availableTools[t.name];
     raw = tool
       ? await tool.execute(t.arguments, ctx)
       : JSON.stringify({ ok: false, error: "Herramienta desconocida." });
@@ -114,6 +123,48 @@ export class Agent {
     s.pending = [];
     let reply = "";
     const deadline = Date.now() + 210000;
+    const availableTools: Record<string, Tool> = {
+      ...tools,
+      contratos_procesar_buzon: {
+        description:
+          "Procesa de una vez todos los correos pendientes: extrae, valida, registra los casos claros y genera alertas, dejando lo dudoso para confirmación humana; preferir para revisar el buzón completo.",
+        args: {
+          hoy: z
+            .string()
+            .refine(validDate)
+            .describe("Fecha de referencia, por ejemplo 2026-09-03"),
+        },
+        execute: async (args) => {
+          try {
+            const { hoy } = z
+              .object({ hoy: z.string().refine(validDate) })
+              .parse(args);
+            ctx.hoy = hoy;
+            s.hoy = hoy;
+            const resumen = await this.practice(s, traces, ctx, false);
+            return JSON.stringify({
+              ok: true,
+              data: {
+                resumen,
+                pendientes: s.pending.map((p) => ({
+                  mensaje_id: p.mensajeId,
+                  cliente: p.contrato.cliente,
+                  valor: p.contrato.valor,
+                  fecha_inicio: p.contrato.fecha_inicio,
+                  fecha_fin: p.contrato.fecha_fin,
+                })),
+              },
+            });
+          } catch {
+            return JSON.stringify({
+              ok: false,
+              error:
+                "No se pudo procesar el lote. Revisá la fecha de referencia y las operaciones completadas.",
+            });
+          }
+        },
+      },
+    };
     try {
       if (confirmation) {
         const p = pending.find((p) => p.token === confirmation.token);
@@ -188,6 +239,8 @@ export class Agent {
           this.day = new Date().toISOString().slice(0, 10);
           this.dailyTokens = 0;
         }
+        let batchFinished = false;
+        let batchSummary = "";
         for (let i = 0; i < max; i++) {
           if (Date.now() > deadline)
             throw new Error(
@@ -201,7 +254,20 @@ export class Agent {
               Number(process.env.MAX_DAILY_TOKENS ?? 1000000)
           )
             throw new Error("Se alcanzó el presupuesto de tokens.");
-          const r = await this.adapter.enviar(s.messages, tools);
+          const finalMessages: Message[] = batchFinished
+            ? [
+                ...s.messages,
+                {
+                  role: "system",
+                  content:
+                    "La ejecución del lote ya terminó. Tu única tarea ahora es explicar en español el resumen verificado de contratos_procesar_buzon, indicar qué se registró y pedir la confirmación de los datos pendientes. La interfaz ya muestra la tabla y el formulario de revisión. Respondé brevemente en texto simple, sin tablas Markdown ni encabezados. Las herramientas ya no están disponibles. No escribas código, XML ni llamadas a funciones.",
+                },
+              ]
+            : s.messages;
+          const r = await this.adapter.enviar(
+            finalMessages,
+            batchFinished ? {} : availableTools,
+          );
           s.tokens += r.tokens;
           this.dailyTokens += r.tokens;
           s.messages.push({
@@ -220,11 +286,23 @@ export class Agent {
           });
           if (!r.calls.length) {
             reply = r.content ?? "Sin respuesta del modelo.";
+            if (batchFinished && /<tool_call>|<function=/i.test(reply)) {
+              reply = batchSummary;
+              s.messages[s.messages.length - 1].content = reply;
+            }
             break;
           }
           for (const t of r.calls.slice(0, 30)) {
-            const raw = await this.call(s, t, traces, ctx);
+            const raw = await this.call(s, t, traces, ctx, availableTools);
             s.messages.push({ role: "tool", content: raw, tool_call_id: t.id });
+            if (
+              t.name === "contratos_procesar_buzon" &&
+              (JSON.parse(raw) as { ok: boolean }).ok
+            ) {
+              batchFinished = true;
+              batchSummary = (JSON.parse(raw) as { data: { resumen: string } })
+                .data.resumen;
+            }
           }
         }
         if (!reply)
@@ -259,7 +337,7 @@ export class Agent {
       ? `Vencen en 60 días: ${r.data.vencen.length}. Pólizas pendientes: ${r.data.polizas_pendientes.length}. Registros desde el corte: ${r.data.registrados_desde_corte.length}.`
       : "";
   }
-  async practice(s: Session, traces: Trace[], ctx: Ctx) {
+  async practice(s: Session, traces: Trace[], ctx: Ctx, simulated = true) {
     const call = async (name: string, args: Record<string, unknown>) =>
       JSON.parse(
         await this.call(
@@ -272,7 +350,9 @@ export class Agent {
     const inbox = await call("contratos_leer_buzon", {});
     if (!inbox.ok) return inbox.error!;
     const summary: string[] = [
-      "Modo de práctica: flujo programado sin modelo de IA.",
+      simulated
+        ? "Modo de práctica: flujo programado sin modelo de IA."
+        : "Resultado verificado de las herramientas del buzón:",
     ];
     for (const m of (inbox.data as { mensajes: { id: string }[] }).mensajes) {
       const e = await call("contratos_extraer", { mensaje_id: m.id });

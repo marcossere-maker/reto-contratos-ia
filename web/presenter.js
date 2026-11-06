@@ -1,4 +1,5 @@
 export const toolLabels = {
+  contratos_procesar_buzon: "Coordinar la revisión completa del buzón",
   contratos_leer_buzon: "Leer los correos pendientes",
   contratos_extraer: "Extraer datos del contrato",
   contratos_validar: "Verificar datos y detectar duplicados",
