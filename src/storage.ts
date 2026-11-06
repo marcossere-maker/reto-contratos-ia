@@ -69,6 +69,21 @@ export async function saveRows(ctx: Ctx, data: Row[]) {
     stringify(data, { header: true, columns }),
   );
 }
+export function exportCsv(data: Row[]) {
+  return stringify(
+    data.map((row) =>
+      Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [
+          key,
+          typeof value === "string" && /^[\s\u0000-\u001f]*[=+\-@]/.test(value)
+            ? "'" + value
+            : value,
+        ]),
+      ),
+    ),
+    { header: true, columns, escape_formulas: true },
+  );
+}
 export async function processed(ctx: Ctx): Promise<string[]> {
   try {
     return await json<string[]>(output(ctx, "procesados.json"));

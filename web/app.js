@@ -256,7 +256,7 @@ document.querySelector("#new-session").addEventListener("click", () => {
 document.querySelector("#reset-demo").addEventListener("click", async () => {
   if (
     !confirm(
-      "¿Reiniciar los datos ficticios? Se borrarán los registros y conversaciones de esta demo compartida.",
+      "¿Reiniciar los datos ficticios? Se borrarán los registros y conversaciones de tu espacio de prueba.",
     )
   )
     return;
@@ -275,10 +275,16 @@ document.querySelector("#reset-demo").addEventListener("click", async () => {
 });
 async function boot() {
   try {
-    const h = await (await fetch("/api/health")).json();
+    const response = await fetch("/api/visitor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    const h = await response.json();
+    if (!response.ok) throw new Error(h.error);
     if (h.storage === "supabase")
       document.querySelector(".footnote").textContent =
-        "Datos ficticios guardados en Supabase. Se conservan entre reinicios y publicaciones.";
+        "Tu espacio de prueba se guarda en Supabase por separado. Este navegador lo recupera durante 7 d�as; borrar cookies pierde el acceso.";
     document.querySelector("#mode-notice").textContent =
       h.provider === "mock"
         ? "Demostración: seis correos ficticios y un flujo programado. No hay conexión a un correo real ni a un modelo de IA."

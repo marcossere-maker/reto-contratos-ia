@@ -2,41 +2,148 @@ import express from "express";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { z } from "zod";
-import { Agent } from "./agent.js";
-import { init, output, rows, processed } from "./storage.js";
+import os from "node:os";
 import {
+  issueVisitor,
+  visitorId,
+  requestVisitor,
+  visitorCookie,
+  ipBucket,
+  takeRate,
+  securityHeaders,
+} from "./security.js";
+import { Agent } from "./agent.js";
+import {
+  init,
+  output,
+  rows,
+  processed,
+  exportCsv,
+  withOutputDirectory,
+} from "./storage.js";
+import {
+  CloudState,
   cloudEnabled,
   withCloudWorkspace,
   WorkspaceBusy,
 } from "./cloud-state.js";
 const directory = process.cwd(),
-  localAgent = new Agent(directory),
   app = express();
-let localQueue = Promise.resolve();
+const localAgents = new Map<string, Agent>();
+const localQueues = new Map<string, Promise<void>>();
 async function workspace<T>(
+  id: string,
   run: (agent: Agent, version: number) => Promise<T>,
   readOnly = false,
 ) {
-  if (cloudEnabled()) return withCloudWorkspace(directory, run, readOnly);
+  if (cloudEnabled())
+    return withCloudWorkspace(
+      directory,
+      run,
+      readOnly,
+      new CloudState(undefined, undefined, undefined, id),
+    );
   let result: T;
-  const task = async () => {
-    await init({ directory, sessionId: "local" });
-    result = await run(localAgent, 0);
-  };
-  const promise = localQueue.then(task, task);
-  localQueue = promise.catch(() => undefined);
+  const task = () =>
+    withOutputDirectory(
+      path.join(
+        process.env.RETO_SCRATCH_DIR ?? os.tmpdir(),
+        "reto02-visitors",
+        id,
+      ),
+      async () => {
+        await init({ directory, sessionId: "local" });
+        let agent = localAgents.get(id);
+        if (!agent) {
+          agent = new Agent(directory);
+          localAgents.set(id, agent);
+        }
+        result = await run(agent, 0);
+      },
+    );
+  const promise = (localQueues.get(id) ?? Promise.resolve()).then(task, task);
+  localQueues.set(
+    id,
+    promise.catch(() => undefined),
+  );
   await promise;
   return result!;
 }
 app.disable("x-powered-by");
-app.use(express.json({ limit: "32kb" }));
+// Se aplican antes del parser: incluso los errores JSON reciben las cabeceras.
 app.use((_req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
+  for (const [key, value] of Object.entries(securityHeaders))
+    res.setHeader(key, value);
   res.setHeader("Cache-Control", "no-store");
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'",
-  );
+  next();
+});
+app.use("/api", (req, res, next) => {
+  if (req.method === "POST") {
+    const origin = req.get("origin");
+    const ownOrigin = `${process.env.VERCEL ? "https" : req.protocol}://${req.get("host")}`;
+    if (
+      (origin && origin !== ownOrigin) ||
+      req.get("sec-fetch-site") === "cross-site"
+    ) {
+      res.status(403).json({ error: "Origen no permitido." });
+      return;
+    }
+    if (!req.is("application/json")) {
+      res.status(415).json({ error: "Se requiere JSON." });
+      return;
+    }
+  }
+  next();
+});
+app.use(express.json({ limit: "32kb" }));
+app.get("/api/health", (_req, res) => res.json({ ok: true }));
+const configuration = () => ({
+  provider: process.env.LLM_PROVIDER ?? "mock",
+  model:
+    process.env.LLM_PROVIDER && process.env.LLM_PROVIDER !== "mock"
+      ? process.env.LLM_MODEL
+      : "flujo programado (sin IA)",
+  configured:
+    !process.env.LLM_PROVIDER ||
+    process.env.LLM_PROVIDER === "mock" ||
+    !!(process.env.LLM_API_KEY && process.env.LLM_BASE_URL),
+  storage: cloudEnabled() ? "supabase" : "local",
+});
+app.post("/api/visitor", async (req, res) => {
+  try {
+    const ip = ipBucket(req);
+    if (!(await takeRate("boot:" + ip, 30, 60))) {
+      res.status(429).json({ error: "Esper� un minuto antes de continuar." });
+      return;
+    }
+    let id = requestVisitor(req);
+    if (!id) {
+      if (!(await takeRate("new:" + ip, 10, 86400))) {
+        res
+          .status(429)
+          .json({ error: "L�mite diario de espacios de prueba alcanzado." });
+        return;
+      }
+      const value = issueVisitor();
+      id = visitorId(value)!;
+      if (cloudEnabled())
+        await new CloudState(undefined, undefined, undefined, id).ensure();
+      res.setHeader("Set-Cookie", visitorCookie(value));
+    }
+    res.json({ ok: true, ...configuration() });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+app.use("/api", (req, res, next) => {
+  const id = requestVisitor(req);
+  if (!id) {
+    res
+      .status(401)
+      .json({ error: "Abr� la demo para iniciar tu espacio de prueba." });
+    return;
+  }
+  res.locals.visitorId = id;
   next();
 });
 const chatSchema = z.object({
@@ -47,45 +154,46 @@ const chatSchema = z.object({
     .optional(),
 });
 function fail(res: express.Response, error: unknown) {
-  res
-    .status(error instanceof WorkspaceBusy ? 409 : 503)
-    .json({
-      error:
-        error instanceof Error
-          ? error.message
-          : "No se pudo completar la operación.",
-    });
+  res.status(error instanceof WorkspaceBusy ? 409 : 503).json({
+    error:
+      error instanceof Error
+        ? error.message
+        : "No se pudo completar la operación.",
+  });
 }
-const rates = new Map<string, { ts: number; n: number }>();
 app.post("/api/chat", async (req, res) => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Petición inválida." });
+    res.status(400).json({ error: "Petici�n inv�lida." });
     return;
   }
-  const ip = req.ip ?? "local",
-    now = Date.now(),
-    rate = rates.get(ip);
-  if (rate && now - rate.ts < 60000 && rate.n >= 10) {
-    res.status(429).json({ error: "Esperá un minuto antes de continuar." });
-    return;
-  }
-  rates.set(
-    ip,
-    rate && now - rate.ts < 60000
-      ? { ...rate, n: rate.n + 1 }
-      : { ts: now, n: 1 },
-  );
-  if (rates.size > 1000)
-    for (const [k, r] of rates) if (now - r.ts > 60000) rates.delete(k);
   try {
-    const data = await workspace(async (agent) => {
+    if (
+      !(await takeRate("chat-ip:" + ipBucket(req), 10, 60)) ||
+      !(await takeRate("chat-visitor:" + res.locals.visitorId, 6, 60)) ||
+      !(await takeRate("chat-day:" + res.locals.visitorId, 30, 86400)) ||
+      !(await takeRate("chat-global", 100, 86400))
+    ) {
+      res
+        .status(429)
+        .json({
+          error: "Se alcanz� un l�mite de uso de la demo. Prob� m�s tarde.",
+        });
+      return;
+    }
+    const data = await workspace(res.locals.visitorId, async (agent) => {
+      if (parsed.data.sessionId && !agent.sessions.has(parsed.data.sessionId)) {
+        res.status(404);
+        throw new Error("Sesi�n inexistente en este espacio.");
+      }
       const s = await agent.session(parsed.data.sessionId);
       return agent.turn(s, parsed.data.message, parsed.data.confirmation);
     });
     res.json(data);
   } catch (e) {
-    fail(res, e);
+    if (res.statusCode === 404)
+      res.json({ error: "Sesi�n inexistente en este espacio." });
+    else fail(res, e);
   }
 });
 app.post("/api/demo/reset", async (req, res) => {
@@ -96,7 +204,11 @@ app.post("/api/demo/reset", async (req, res) => {
     return;
   }
   try {
-    await workspace(async (agent) => {
+    if (!(await takeRate("reset:" + res.locals.visitorId, 3, 60))) {
+      res.status(429).json({ error: "Esper� antes de reiniciar nuevamente." });
+      return;
+    }
+    await workspace(res.locals.visitorId, async (agent) => {
       await fs.rm(output({ directory, sessionId: "reset" }), {
         recursive: true,
         force: true,
@@ -109,29 +221,18 @@ app.post("/api/demo/reset", async (req, res) => {
     fail(res, e);
   }
 });
-app.get("/api/health", (_req, res) =>
-  res.json({
-    ok: true,
-    provider: process.env.LLM_PROVIDER ?? "mock",
-    model:
-      process.env.LLM_PROVIDER && process.env.LLM_PROVIDER !== "mock"
-        ? process.env.LLM_MODEL
-        : "flujo programado (sin IA)",
-    configured:
-      !process.env.LLM_PROVIDER ||
-      process.env.LLM_PROVIDER === "mock" ||
-      !!(process.env.LLM_API_KEY && process.env.LLM_BASE_URL),
-    storage: cloudEnabled() ? "supabase" : "local",
-  }),
-);
 app.get("/api/sessions/:id", async (req, res) => {
   try {
-    const data = await workspace(async (agent) => {
-      const s = agent.sessions.get(req.params.id);
-      return s
-        ? { sessionId: s.id, history: s.history, pending: s.pending }
-        : null;
-    }, true);
+    const data = await workspace(
+      res.locals.visitorId,
+      async (agent) => {
+        const s = agent.sessions.get(req.params.id);
+        return s
+          ? { sessionId: s.id, history: s.history, pending: s.pending }
+          : null;
+      },
+      true,
+    );
     if (!data) {
       res.status(404).json({ error: "Sesión inexistente." });
       return;
@@ -145,6 +246,7 @@ app.get("/api/state", async (_req, res) => {
   try {
     res.json(
       await workspace(
+        res.locals.visitorId,
         async (agent, revision) => ({
           storage: cloudEnabled() ? "supabase" : "local",
           revision,
@@ -163,6 +265,7 @@ app.get("/api/state", async (_req, res) => {
 app.get("/api/report", async (_req, res) => {
   try {
     const data = await workspace(
+      res.locals.visitorId,
       async () =>
         fs.readFile(
           output({ directory, sessionId: "report" }, "alertas.md"),
@@ -178,15 +281,12 @@ app.get("/api/report", async (_req, res) => {
 app.get("/api/master", async (_req, res) => {
   try {
     const data = await workspace(
-      async () =>
-        fs.readFile(
-          output(
-            { directory, sessionId: "master" },
-            "sharepoint",
-            "maestro-contratos.csv",
-          ),
-          "utf8",
-        ),
+      res.locals.visitorId,
+      async () => {
+        const data = await rows({ directory, sessionId: "master" });
+        // Solo la descarga se neutraliza; el maestro can�nico conserva los datos originales.
+        return exportCsv(data);
+      },
       true,
     );
     res.attachment("maestro-contratos.csv").type("text/csv").send(data);
@@ -195,6 +295,9 @@ app.get("/api/master", async (_req, res) => {
   }
 });
 app.use(express.static(path.join(directory, "web")));
+app.use((_req, res) => {
+  res.status(404).json({ error: "Recurso inexistente." });
+});
 app.use(
   (
     _err: unknown,

@@ -26,7 +26,7 @@ La demo conserva archivos locales para que el evaluador inspeccione qué se regi
 
 ## 3. Ciclo del agente y control humano
 
-El modelo decide qué herramienta solicitar; el backend valida argumentos zod, ejecuta y registra la operación. Hasta 25 iteraciones por turno, presupuesto acumulado configurable y límite diario conservado en Supabase en modo cloud, timeout de proveedor y límite HTTP por IP en memoria. Los errores se devuelven en lenguaje claro sin exponer credenciales.
+El modelo decide qué herramienta solicitar; el backend valida argumentos zod, ejecuta y registra la operación. Hasta 25 iteraciones por turno, presupuesto acumulado configurable y límite diario conservado en Supabase en modo cloud, timeout de proveedor y límites HTTP compartidos por IP, visitante y día en Supabase (en memoria solo para ejecución local). Los errores se devuelven en lenguaje claro sin exponer credenciales.
 
 Los datos registrados deben coincidir con la extracción determinista o una revisión humana autorizada. `confirmado=true` propuesto por el modelo no constituye autorización. Una validación pendiente genera un token ligado a sesión, mensaje y contrato. El formulario muestra evidencia y permite confirmar valor e inicio/fin; el siguiente turno consume ese token. Si interviene otro turno, la confirmación vence. La herramienta vuelve a validar antes de escribir. Las fechas siguen teniendo que ser válidas.
 
@@ -93,7 +93,7 @@ El modo real fue probado end-to-end con Qwen vía Groq. El acceso público ya fu
 
 ## 10. Uso de IA
 
-Se utilizó Codex/ChatGPT para leer el PRD, proponer arquitectura, implementar el chat y las herramientas, escribir pruebas y documentación, y preparar el guion estratégico. Se descartó usar la fecha del correo como fecha contractual automática. Se corrigió en pruebas una comparación dependiente del orden de propiedades JSON y se agregó soporte a la variante de identificación que no dice “identificada con”. El candidato debe recorrer código y escenarios antes de defenderlos. No se afirma uso de otros asistentes ni resultados de revisiones no realizadas.
+Se utilizó Codex/ChatGPT para leer el PRD, proponer arquitectura, implementar el chat y las herramientas, escribir pruebas y documentación, y preparar el guion estratégico. Se descartó usar la fecha del correo como fecha contractual automática. Se corrigió en pruebas una comparación dependiente del orden de propiedades JSON y se agregó soporte a la variante de identificación que no dice “identificada con”. El candidato debe recorrer código y escenarios antes de defenderlos. El candidato utilizó también Claude para una revisión de seguridad de caja negra. Codex contrastó los hallazgos con el código y aplicó las correcciones documentadas en REVISION_SEGURIDAD.md.
 
 ## 11. Riesgos y paso a producción
 
@@ -104,3 +104,9 @@ Instrumentar latencia, tokens/costo por caso, tasa de revisión, campos corregid
 **Vertex AI / Bedrock:** implementar otro `LlmAdapter` que traduzca mensajes, esquemas, tool calls, respuestas y consumo al SDK de la plataforma aprobada. Probar los mismos escenarios más confirmación y fallos; usar IAM/identidad de servicio y secretos corporativos, elegir región, modelo y políticas según disponibilidad. La portabilidad es de interfaz y pruebas; no se promete cambiar solo una URL ni tener estos adaptadores implementados. Después sustituir el repositorio de archivos por SharePoint/BD según gobernanza.
 
 Fuentes: [Bedrock tool use](https://docs.aws.amazon.com/bedrock/latest/userguide/tool-use.html), [Google function calling](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/tools/function-calling), [Render gratuito](https://render.com/docs/free).
+
+## 12. Revisión externa y correcciones de seguridad
+
+Se adoptó la opción elegida por el candidato: demo pública con un espacio independiente por visitante. El reinicio, las descargas, las conversaciones y la confirmación quedan ligados a una cookie firmada; el estado global anterior se conserva fuera de la API de visitantes. Se agregaron cuotas atómicas compartidas, cabeceras para HTML y API, respuestas 404 reales, health mínimo y neutralización de fórmulas en CSV. UUID aleatorios y validación determinista ya existían: se verificaron, no se atribuyen como correcciones nuevas.
+
+La matriz de siete hallazgos, pruebas y riesgos residuales está en [REVISION_SEGURIDAD.md](REVISION_SEGURIDAD.md). El aislamiento anónimo facilita la entrevista; la autenticación corporativa y permisos por rol siguen pendientes antes de operar con contratos reales.

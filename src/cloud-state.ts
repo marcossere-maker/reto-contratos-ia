@@ -27,7 +27,40 @@ export class CloudState {
     private url = process.env.SUPABASE_URL,
     private key = process.env.SUPABASE_PUBLISHABLE_KEY,
     private token = process.env.STORAGE_ACCESS_TOKEN,
-  ) {}
+    public readonly workspaceId = "demo",
+  ) {
+    if (!/^(demo|v_[a-f0-9]{64})$/.test(workspaceId))
+      throw new Error("Espacio inválido.");
+  }
+  async rpc(name: string, body: unknown): Promise<unknown> {
+    if (!this.url || !this.key || !this.token)
+      throw new Error("Persistencia sin configurar.");
+    const response = await fetch(`${this.url}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: {
+        apikey: this.key,
+        "x-reto-token": this.token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok)
+      throw new Error("No se pudo autorizar la operación de la demo.");
+    return response.json();
+  }
+  async ensure() {
+    await this.rpc("reto02_create_workspace", { p_id: this.workspaceId });
+  }
+  async takeRate(bucket: string, limit: number, seconds: number) {
+    return (
+      (await this.rpc("reto02_take_rate", {
+        p_bucket: bucket,
+        p_limit: limit,
+        p_seconds: seconds,
+      })) === true
+    );
+  }
   async request(
     query: string,
     method = "GET",
@@ -57,7 +90,7 @@ export class CloudState {
   async read() {
     const row = (
       await this.request(
-        "id=eq.demo&select=id,state,version,lock_owner,locked_until",
+        `id=eq.${this.workspaceId}&select=id,state,version,lock_owner,locked_until`,
       )
     )[0];
     if (!row)
@@ -71,7 +104,7 @@ export class CloudState {
       owner = randomUUID(),
       now = new Date().toISOString();
     const acquired = await this.request(
-      `id=eq.demo&version=eq.${row.version}&or=(locked_until.is.null,locked_until.lt.${now})`,
+      `id=eq.${this.workspaceId}&version=eq.${row.version}&or=(locked_until.is.null,locked_until.lt.${now})`,
       "PATCH",
       {
         lock_owner: owner,
@@ -86,7 +119,7 @@ export class CloudState {
   }
   async commit(row: StateRow, state: Snapshot) {
     const result = await this.request(
-      `id=eq.demo&version=eq.${row.version}&lock_owner=eq.${row.lock_owner}&locked_until=gt.${new Date().toISOString()}`,
+      `id=eq.${this.workspaceId}&version=eq.${row.version}&lock_owner=eq.${row.lock_owner}&locked_until=gt.${new Date().toISOString()}`,
       "PATCH",
       {
         state,
@@ -103,10 +136,14 @@ export class CloudState {
     return row.version + 1;
   }
   async release(row: StateRow) {
-    await this.request(`id=eq.demo&lock_owner=eq.${row.lock_owner}`, "PATCH", {
-      lock_owner: null,
-      locked_until: null,
-    });
+    await this.request(
+      `id=eq.${this.workspaceId}&lock_owner=eq.${row.lock_owner}`,
+      "PATCH",
+      {
+        lock_owner: null,
+        locked_until: null,
+      },
+    );
   }
 }
 async function collect(
