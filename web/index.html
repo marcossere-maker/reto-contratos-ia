@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Contratos · Periferia</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="/"
+        >P<span>eriferia</span><small>LAB DE ESTRATEGIA</small></a
+      >
+      <div class="nav active">▤ &nbsp; Registro de contratos</div>
+      <div class="sidebar-note">
+        <span class="eyebrow">ENTORNO DE DEMOSTRACIÓN</span>
+        <p>Buzón ficticio · 6 mensajes<br />Archivo SharePoint simulado</p>
+        <p>Fecha de referencia<br /><strong>03 septiembre 2026</strong></p>
+      </div>
+      <button id="new-session" class="secondary">Nueva conversación</button>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <span class="eyebrow">ADMINISTRACIÓN / CONTRATOS</span>
+          <h1>Un registro claro.<br />Decisiones trazables.</h1>
+          <p>
+            Procesá el buzón, revisá las excepciones y mantené el maestro al
+            día.
+          </p>
+        </div>
+        <span id="provider" class="badge">Conectando…</span>
+      </header>
+      <section class="steps" aria-label="Flujo de trabajo">
+        <div><b>01</b><span>Leer y extraer</span></div>
+        <div><b>02</b><span>Validar y revisar</span></div>
+        <div><b>03</b><span>Registrar y alertar</span></div>
+      </section>
+      <section class="workspace">
+        <div class="chat-head">
+          <div>
+            <span class="status-dot"></span
+            ><strong>Asistente de contratos</strong>
+          </div>
+          <a href="/api/report" target="_blank" rel="noopener"
+            >Descargar alertas ↗</a
+          >
+        </div>
+        <div id="messages" role="log" aria-live="polite">
+          <div class="welcome">
+            <span class="eyebrow">EMPEZÁ POR EL BUZÓN</span>
+            <h2>¿Qué contratos necesitan atención?</h2>
+            <p>
+              El asistente registra los casos claros y te consulta antes de
+              avanzar con los dudosos.
+            </p>
+            <button id="process">Procesar los 6 mensajes <span>→</span></button>
+          </div>
+        </div>
+        <div id="pending"></div>
+        <form id="chat-form">
+          <label class="sr-only" for="message">Mensaje al asistente</label
+          ><textarea
+            id="message"
+            rows="2"
+            maxlength="5000"
+            placeholder="Pedile al asistente que revise el buzón…"
+            required
+          ></textarea
+          ><button type="submit" id="send">Enviar ↑</button>
+        </form>
+        <p class="footnote">
+          Datos ficticios. Los registros se escriben en archivos del entorno de
+          prueba.
+        </p>
+      </section>
+      <footer>
+        RETO 02 / PERIFERIA IT GROUP
+        <span>Control humano en cada excepción.</span>
+      </footer>
+    </main>
+  </body>
+</html>

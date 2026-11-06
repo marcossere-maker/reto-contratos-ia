@@ -1,0 +1,362 @@
+:root {
+  font-family:
+    Inter,
+    Segoe UI,
+    Arial,
+    sans-serif;
+  color: #172c28;
+  background: #f4f5f1;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  display: flex;
+  min-height: 100vh;
+}
+aside {
+  width: 240px;
+  background: #173c34;
+  color: #e8f1e9;
+  padding: 38px 26px;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+}
+.brand {
+  font-size: 34px;
+  letter-spacing: -1.5px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 750;
+}
+.brand small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  color: #a8c2b7;
+}
+.nav {
+  margin-top: 64px;
+  font-size: 13px;
+  border-left: 2px solid #c1e486;
+  padding: 14px 0 14px 12px;
+}
+.sidebar-note {
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #c0d1c9;
+}
+.sidebar-note .eyebrow {
+  font-size: 8px;
+}
+.secondary {
+  border: 1px solid #688277;
+  background: none;
+  color: #e8f1e9;
+  margin-top: 18px;
+}
+main {
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  padding: 46px 6vw 20px;
+  max-width: 1600px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 700;
+  color: #527269;
+}
+h1 {
+  font-size: clamp(30px, 3.3vw, 47px);
+  line-height: 1.12;
+  letter-spacing: -1.8px;
+  font-weight: 600;
+  margin: 18px 0;
+}
+header p {
+  font-size: 14px;
+  color: #62736b;
+  line-height: 1.6;
+}
+.badge {
+  border: 1px solid #cbd6c8;
+  font-size: 10px;
+  padding: 9px 12px;
+  border-radius: 30px;
+  max-width: 250px;
+  line-height: 1.5;
+}
+.steps {
+  display: flex;
+  border-top: 1px solid #d9dfd5;
+  border-bottom: 1px solid #d9dfd5;
+  padding: 22px 0;
+  margin: 26px 0;
+}
+.steps div {
+  flex: 1;
+  font-size: 12px;
+}
+.steps b {
+  color: #628276;
+  margin-right: 14px;
+  font-family: monospace;
+}
+.workspace {
+  background: #fff;
+  border: 1px solid #dce3d8;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.chat-head {
+  padding: 20px 26px;
+  border-bottom: 1px solid #edf0ea;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  gap: 10px;
+}
+.chat-head a {
+  color: #56756b;
+  text-decoration: none;
+}
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #6d9c66;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+#messages {
+  padding: 26px;
+  min-height: 260px;
+  max-height: 550px;
+  overflow: auto;
+}
+.welcome {
+  padding: 25px 0;
+}
+.welcome h2 {
+  font-size: 24px;
+  letter-spacing: -0.6px;
+  font-weight: 550;
+}
+.welcome p {
+  font-size: 13px;
+  color: #66746d;
+  max-width: 480px;
+  line-height: 1.7;
+}
+button {
+  background: #254f40;
+  color: white;
+  border: 0;
+  border-radius: 6px;
+  padding: 12px 18px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+button:hover {
+  background: #37664e;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+#process {
+  margin-top: 18px;
+  min-width: 250px;
+  text-align: left;
+}
+#process span {
+  float: right;
+  margin-left: 35px;
+}
+#chat-form {
+  display: flex;
+  gap: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  padding: 9px;
+  margin: 14px 26px 0;
+  align-items: center;
+}
+textarea {
+  font: inherit;
+  font-size: 13px;
+  border: none;
+  resize: vertical;
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  color: #253e33;
+}
+textarea:focus {
+  outline: none;
+}
+#chat-form:focus-within {
+  outline: 2px solid #9ab77d;
+}
+.footnote {
+  font-size: 10px;
+  color: #738074;
+  margin: 10px 26px 18px;
+}
+.bubble {
+  padding: 15px 18px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: #f3f6ef;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.bubble.user {
+  margin-left: 15%;
+  background: #e7eee4;
+}
+.bubble-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #5e786a;
+  margin-bottom: 8px;
+}
+.trace {
+  border: 1px solid #dce4d8;
+  margin: 6px 0 14px;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+}
+.trace summary {
+  cursor: pointer;
+  color: #4d6b5c;
+}
+.trace pre {
+  max-height: 250px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.review {
+  margin: 12px 26px;
+  padding: 22px;
+  background: #fffaeb;
+  border: 1px solid #e6d4a2;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.review h3 {
+  margin-top: 0;
+}
+.review p {
+  line-height: 1.6;
+}
+.review label {
+  display: block;
+  margin: 10px 0;
+}
+.review input {
+  display: block;
+  padding: 9px;
+  width: 100%;
+  max-width: 300px;
+  border: 1px solid #c9cbb7;
+  border-radius: 4px;
+  margin-top: 5px;
+  font: inherit;
+}
+.review button {
+  margin-top: 10px;
+}
+.review details {
+  margin: 12px 0;
+}
+.review pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #6e7b70;
+  margin: 25px 0;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #7f9738;
+  outline-offset: 3px;
+}
+@media (max-width: 800px) {
+  aside {
+    display: none;
+  }
+  main {
+    margin: 0;
+    width: 100%;
+    padding: 28px 18px;
+  }
+  header {
+    display: block;
+  }
+  .badge {
+    display: inline-block;
+    margin-top: 10px;
+  }
+  .steps span {
+    font-size: 10px;
+  }
+  .steps b {
+    margin-right: 5px;
+  }
+  .chat-head {
+    padding: 16px;
+  }
+  #messages {
+    padding: 16px;
+  }
+  #chat-form {
+    margin: 12px;
+  }
+  .review {
+    margin: 12px;
+  }
+  .footnote {
+    margin: 12px;
+  }
+  .welcome h2 {
+    font-size: 21px;
+  }
+  footer span {
+    display: none;
+  }
+}
