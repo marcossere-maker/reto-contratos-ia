@@ -8,7 +8,7 @@
 
 **Gobierno y valor, 1 minuto.** Administración es dueña del maestro. Comercial entrega documentos firmados dentro de dos días hábiles. Hay acuses, responsables y escalamiento. Para reconstruir el faltante se cruza contra facturación; registrar lo que llegó al buzón no alcanza para demostrar cobertura. Medir cobertura contractual, antigüedad de pendientes y minutos de revisión. El retorno se calcula con tiempo realmente ahorrado, sin prometer cifras no medidas.
 
-**Límites y siguiente paso, 30 segundos.** TXT y archivos locales representan correo y SharePoint. El hosting gratuito pierde estado al reiniciar. Antes de producción se necesitan integraciones reales, acceso por rol, almacenamiento transaccional, evaluación con documentos diversos y un piloto supervisado.
+**Límites y siguiente paso, 30 segundos.** TXT y archivos representan correo y SharePoint. La app está publicada en Vercel y conserva el estado en un proyecto Supabase separado; se verificó la persistencia después de volver a publicar. Antes de producción se necesitan integraciones reales, acceso por rol, un esquema de datos para mayor escala, evaluación con documentos diversos y un piloto supervisado.
 
 ## Preguntas probables
 

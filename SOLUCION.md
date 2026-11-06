@@ -1,5 +1,7 @@
 # Solución del reto 02
 
+**Despliegue actualizado:** la app está publicada en https://reto-contratos-ia.vercel.app con un proyecto separado de Supabase Free. El almacenamiento cloud descrito en DESPLIEGUE.md conserva archivos, contratos y sesiones entre publicaciones; el modo local sigue disponible para cumplir demo.ts. La conexión real a Qwen sigue pendiente de configurar la clave.
+
 ## 1. Problema y usuario
 
 Administración carece de un registro completo y actualizado de contratos porque el proceso depende de envíos comerciales dispersos y de una persona que ya no está. Esto dificulta anticipar renovaciones, pólizas y obligaciones. El agente asiste al analista; Administración conserva la responsabilidad del maestro y Comercial la obligación de entregar documentos completos.
@@ -15,6 +17,7 @@ flowchart LR
   F[Fixtures de solo lectura] --> T
   T --> O[CSV · contratos · historial · alertas]
   O --> U
+  O <--> P[Supabase · estado durable y sesiones]
 ```
 
 Comportamiento: prompt Markdown. Conocimiento: reglas documentadas del proceso. Ejecución: herramientas independientes del servidor. La interfaz propia `LlmAdapter.enviar(messages, tools)` devuelve texto, llamadas y uso de tokens. El ciclo no depende del formato de Groq. El adaptador convierte mensajes y esquemas a la API compatible; cada resultado de herramienta vuelve al modelo con su identificador.
@@ -23,7 +26,7 @@ La demo conserva archivos locales para que el evaluador inspeccione qué se regi
 
 ## 3. Ciclo del agente y control humano
 
-El modelo decide qué herramienta solicitar; el backend valida argumentos zod, ejecuta y registra la operación. Hasta 25 iteraciones por turno, presupuesto acumulado configurable, límite diario en memoria, timeout de proveedor y límite HTTP por IP. Los errores se devuelven en lenguaje claro sin exponer credenciales.
+El modelo decide qué herramienta solicitar; el backend valida argumentos zod, ejecuta y registra la operación. Hasta 25 iteraciones por turno, presupuesto acumulado configurable y límite diario conservado en Supabase en modo cloud, timeout de proveedor y límite HTTP por IP en memoria. Los errores se devuelven en lenguaje claro sin exponer credenciales.
 
 Los datos registrados deben coincidir con la extracción determinista o una revisión humana autorizada. `confirmado=true` propuesto por el modelo no constituye autorización. Una validación pendiente genera un token ligado a sesión, mensaje y contrato. El formulario muestra evidencia y permite confirmar valor e inicio/fin; el siguiente turno consume ese token. Si interviene otro turno, la confirmación vence. La herramienta vuelve a validar antes de escribir. Las fechas siguen teniendo que ser válidas.
 
@@ -64,10 +67,10 @@ Duplicado: mismo ID, valor e inicio/fin. Actualización: mismo ID o NIT y simili
 ## 7. Decisiones y alternativas
 
 1. **Reglas deterministas para registrar:** facilitan trazabilidad de montos y fechas. Extracción exclusivamente generativa descartada por riesgo de alteraciones y menor reproducibilidad.
-2. **CSV y archivos:** permiten inspección y cumplen el PRD. Base de datos descartada para el plazo; se necesitará para concurrencia, atomicidad y recuperación en producción.
+2. **CSV y archivos:** permiten inspección y cumplen el PRD. La entrega cloud agrega un snapshot transaccional en Postgres que preserva los archivos del PRD; un esquema normalizado sigue siendo recomendable para mayor escala.
 3. **Adaptador LLM propio:** permite cambiar de proveedor sin reescribir las herramientas. Acoplar lógica a Groq descartado porque la organización puede usar Vertex o Bedrock.
 4. **Revisión de firma imprecisa:** `msg-006` no contiene día exacto. Usar la fecha del correo como si fuera fecha contractual se descartó; se confirma también fecha_inicio, además de valor y fin. Es una ampliación explícita del ejemplo del PRD.
-5. **Render para la demo:** ejecuta el servidor y sus archivos con pocos cambios. La limitación de almacenamiento temporal se informa. Una migración a Vercel o Sites requiere persistencia externa y adaptación del runtime.
+5. **Vercel + Supabase:** se adaptó el servidor para funciones y el estado se confirma en Postgres. Render quedó como configuración alternativa local compatible; sus discos temporales no se usan para la persistencia cloud.
 
 ## 8. Supuestos
 
@@ -84,7 +87,7 @@ Los documentos son ficticios y legibles. No se implementa OCR, buzón corporativ
 | Alertar              | Hecho como reporte                  | Programación, responsables y entrega externa    |
 | Manejo de errores    | Hecho para escenarios probados      | Telemetría central, soporte y ensayos de fallos |
 
-El modo real requiere configurar una clave y completar la prueba end-to-end con el proveedor. El enlace público depende de crear el servicio en la cuenta de hosting. Estas dos verificaciones no deben darse por hechas por ejecutar la demo sin modelo.
+El modo real requiere configurar una clave y completar la prueba end-to-end con el proveedor. El acceso público ya fue habilitado con aprobación explícita y se probó el recorrido desde el enlace. Las verificaciones de persistencia cloud se documentan por separado; no equivalen a probar Qwen.
 
 ## 10. Uso de IA
 
@@ -92,7 +95,7 @@ Se utilizó Codex/ChatGPT para leer el PRD, proponer arquitectura, implementar e
 
 ## 11. Riesgos y paso a producción
 
-Priorizar: extracción equivocada, documentos faltantes, falsos duplicados, uso de datos sensibles, reintentos y escritura parcial. Mitigaciones: evidencia por campo, revisión por riesgo, conciliación contra facturación, permisos por rol, cifrado, transacciones/idempotencia, respaldo y evaluación periódica. El archivo CSV, historial y copia documental no forman una transacción atómica conjunta: una caída entre escrituras requiere conciliación. La cola HTTP protege un solo proceso, no varias instancias.
+Priorizar: extracción equivocada, documentos faltantes, falsos duplicados, uso de datos sensibles, reintentos y escritura parcial. Mitigaciones: evidencia por campo, revisión por riesgo, conciliación contra facturación, permisos por rol, cifrado, transacciones/idempotencia, respaldo y evaluación periódica. En modo local, CSV, historial y copia documental no forman una transacción atómica conjunta. En modo cloud se guardan como una única versión del snapshot Postgres; un lease y un control de versión impiden sobrescrituras entre instancias. No se envían efectos externos antes del commit. La solución está limitada al volumen de esta demo.
 
 Instrumentar latencia, tokens/costo por caso, tasa de revisión, campos corregidos, rechazos, fallos y cobertura. Piloto con Administración en paralelo al proceso vigente; habilitar escritura real solo tras acordar calidad y manejo de excepciones. Evaluar retorno con volumen × minutos manuales evitados, restando revisión y costo operativo, sin atribuir ahorros no medidos.
 

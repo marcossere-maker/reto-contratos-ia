@@ -43,15 +43,19 @@ También admite Alibaba Model Studio: `LLM_PROVIDER=qwen`, `LLM_MODEL=qwen3.5-pl
 - `GET /api/report`: descarga el último `alertas.md`.
 - `POST /api/demo/reset`: `{confirm:"reiniciar-datos-ficticios"}` restaura los datos de prueba y vacía las conversaciones. El botón pide confirmación; afecta al entorno compartido. No reinicia el límite diario de tokens.
 
-Sesiones y límites de gasto viven en memoria. Hay un único escritor HTTP por proceso para proteger el CSV. No escalar a varias instancias sin cambiar persistencia y coordinación. Cada herramienta retorna un string JSON `{ok,data}` o `{ok:false,error}`, con argumentos zod. Las herramientas son importables sin servidor.
+En local, sesiones y límites viven en memoria y una cola serializa la escritura del CSV. En Vercel, Supabase conserva el estado y coordina las escrituras entre instancias mediante un lease y control de versión. Cada herramienta retorna un string JSON `{ok,data}` o `{ok:false,error}`, con argumentos zod. Las herramientas son importables sin servidor.
 
-## Publicar en Render
+## Despliegue en Vercel + Supabase
 
-El archivo `render.yaml` configura un servicio gratuito. Subir este proyecto a un repositorio Git propio, conectar ese repositorio en Render y crear un Blueprint. Definir allí `LLM_API_KEY` y `LLM_BASE_URL` como variables del backend. Build: `npm ci && npm run build`; inicio: `npm start`; health: `/api/health`.
+Proyecto Vercel: `reto-contratos-ia`. **Enlace público: https://reto-contratos-ia.vercel.app**. La protección se retiró solo de esta demo tras aprobación explícita. Proyecto Supabase separado: `reto-contratos-ia` (`orlwzamtsmirpzsrmalv`), organización Free del candidato.
 
-**URL pública: pendiente de crear el servicio en la cuenta del candidato.** La app local y el modo real son independientes del proveedor de hosting.
+`vercel.json` publica los archivos web y una función Node con las rutas API. `src/local.ts` conserva el arranque local; la función importa Express sin abrir un puerto.
 
-Render gratuito pierde los archivos generados al reiniciar o suspenderse; el maestro se reconstruye a partir de fixtures. Abrir el servicio y comprobarlo antes de la defensa. No usar para datos reales. Vercel requiere un almacenamiento externo y sesiones persistidas; Sites requiere adaptar el servidor a Workers y D1/R2. Ninguna de esas migraciones está implementada.
+Variables de Vercel: `STORAGE_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y `STORAGE_ACCESS_TOKEN` cifrado. El token está restringido por RLS al estado del reto; no es una clave service_role. La UI no recibe este secreto. Para Qwen agregar además las variables LLM, con la clave cifrada en el backend.
+
+La tabla `reto02_state` guarda el estado completo: maestro, documentos, auditoría, correos procesados, conversaciones, confirmaciones y consumo. Las vistas `reto02_contracts` y `reto02_documents` facilitan inspección SQL. Cada turno recupera ese estado en un directorio temporal y confirma la nueva versión en Postgres antes de responder. Una publicación o reinicio no borra la base. El botón de reinicio sí restaura deliberadamente los datos ficticios compartidos.
+
+`GET /api/state` muestra revisión y conteos sin secretos; `GET /api/master` descarga el CSV. Consultar DESPLIEGUE.md para operación y límites.
 
 ## Entrega y protección de secretos
 

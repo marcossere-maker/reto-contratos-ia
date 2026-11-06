@@ -153,6 +153,9 @@ document.querySelector("#reset-demo").addEventListener("click", async () => {
 async function boot() {
   try {
     const h = await (await fetch("/api/health")).json();
+    if (h.storage === "supabase")
+      document.querySelector(".footnote").textContent =
+        "Datos ficticios guardados en Supabase. Se conservan entre reinicios y publicaciones.";
     document.querySelector("#provider").textContent =
       h.provider === "mock"
         ? "Práctica guiada · sin IA"

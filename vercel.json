@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "outputDirectory": "web",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 300,
+      "includeFiles": "{fixtures/**,agent/**,src/knowledge/**,web/**}"
+    }
+  },
+  "rewrites": [{ "source": "/api/:path*", "destination": "/api/index" }]
+}

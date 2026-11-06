@@ -113,6 +113,7 @@ export class Agent {
     const pending = s.pending;
     s.pending = [];
     let reply = "";
+    const deadline = Date.now() + 210000;
     try {
       if (confirmation) {
         const p = pending.find((p) => p.token === confirmation.token);
@@ -188,6 +189,10 @@ export class Agent {
           this.dailyTokens = 0;
         }
         for (let i = 0; i < max; i++) {
+          if (Date.now() > deadline)
+            throw new Error(
+              "Se alcanzó el tiempo máximo del turno. Podés continuar en otro mensaje.",
+            );
           const reservation =
             Math.ceil(JSON.stringify(s.messages).length / 2) + 2500;
           if (

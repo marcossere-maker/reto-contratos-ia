@@ -1,3 +1,9 @@
+.reset-link {
+  margin: 14px 26px 0;
+  background: transparent;
+  color: #315c3d;
+  border: 1px solid #d9e0d5;
+}
 :root {
   font-family:
     Inter,

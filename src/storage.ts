@@ -3,6 +3,13 @@ import path from "node:path";
 import { parse } from "csv-parse/sync";
 import { stringify } from "csv-stringify/sync";
 import type { Ctx, Row } from "./types.js";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+const requestOutput = new AsyncLocalStorage<string>();
+export const withOutputDirectory = <T>(
+  directory: string,
+  run: () => Promise<T>,
+) => requestOutput.run(directory, run);
 
 export const columns = [
   "id_contrato",
@@ -25,7 +32,7 @@ export const columns = [
 export const fixture = (ctx: Ctx, ...p: string[]) =>
   path.join(ctx.directory, "fixtures", "reto-02", ...p);
 export const output = (ctx: Ctx, ...p: string[]) =>
-  path.join(ctx.directory, "out", ...p);
+  path.join(requestOutput.getStore() ?? path.join(ctx.directory, "out"), ...p);
 export async function json<T>(file: string): Promise<T> {
   return JSON.parse(await fs.readFile(file, "utf8")) as T;
 }
