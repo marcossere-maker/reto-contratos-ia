@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Contratos · Periferia</title>
     <link rel="stylesheet" href="/style.css" />
-    <script src="/app.js" defer></script>
+    <script src="/app.js" type="module"></script>
   </head>
   <body>
     <aside>
@@ -24,24 +24,38 @@
       <header>
         <div>
           <span class="eyebrow">ADMINISTRACIÓN / CONTRATOS</span>
-          <h1>Un registro claro.<br />Decisiones trazables.</h1>
+          <h1>Registro de contratos</h1>
           <p>
-            Procesá el buzón, revisá las excepciones y mantené el maestro al
-            día.
+            Revisá qué llegó al buzón y resolvé los casos que necesitan tu
+            decisión.
           </p>
         </div>
         <span id="provider" class="badge">Conectando…</span>
       </header>
+      <div id="mode-notice" class="mode-notice">
+        Esta demo usa seis correos de ejemplo; no está conectada a un correo
+        real.
+      </div>
       <section class="steps" aria-label="Flujo de trabajo">
         <div><b>01</b><span>Leer y extraer</span></div>
         <div><b>02</b><span>Validar y revisar</span></div>
         <div><b>03</b><span>Registrar y alertar</span></div>
       </section>
+      <section
+        id="results"
+        class="results"
+        aria-label="Resultado del buzón"
+        hidden
+      ></section>
+      <section
+        id="pending"
+        aria-label="Casos que necesitan tu decisión"
+      ></section>
       <section class="workspace">
         <div class="chat-head">
           <div>
             <span class="status-dot"></span
-            ><strong>Asistente de contratos</strong>
+            ><strong>Conversación con el asistente</strong>
           </div>
           <a href="/api/master" target="_blank" rel="noopener">Maestro CSV ↗</a>
           <a href="/api/report" target="_blank" rel="noopener"
@@ -51,15 +65,17 @@
         <div id="messages" role="log" aria-live="polite">
           <div class="welcome">
             <span class="eyebrow">EMPEZÁ POR EL BUZÓN</span>
-            <h2>¿Qué contratos necesitan atención?</h2>
+            <h2>Primero, revisá el buzón de ejemplo</h2>
             <p>
-              El asistente registra los casos claros y te consulta antes de
-              avanzar con los dudosos.
+              Hay seis correos: contratos nuevos, una modificación, un duplicado
+              y una cotización. Al revisarlos verás qué se registró y qué falta
+              confirmar.
             </p>
-            <button id="process">Procesar los 6 mensajes <span>→</span></button>
+            <button id="process">
+              Revisar los 6 correos de ejemplo <span>→</span>
+            </button>
           </div>
         </div>
-        <div id="pending"></div>
         <form id="chat-form">
           <label class="sr-only" for="message">Mensaje al asistente</label
           ><textarea
