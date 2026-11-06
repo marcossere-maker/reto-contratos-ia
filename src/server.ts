@@ -113,7 +113,7 @@ app.post("/api/visitor", async (req, res) => {
   try {
     const ip = ipBucket(req);
     if (!(await takeRate("boot:" + ip, 30, 60))) {
-      res.status(429).json({ error: "Esper� un minuto antes de continuar." });
+      res.status(429).json({ error: "Esperá un minuto antes de continuar." });
       return;
     }
     let id = requestVisitor(req);
@@ -121,7 +121,7 @@ app.post("/api/visitor", async (req, res) => {
       if (!(await takeRate("new:" + ip, 10, 86400))) {
         res
           .status(429)
-          .json({ error: "L�mite diario de espacios de prueba alcanzado." });
+          .json({ error: "Límite diario de espacios de prueba alcanzado." });
         return;
       }
       const value = issueVisitor();
@@ -140,7 +140,7 @@ app.use("/api", (req, res, next) => {
   if (!id) {
     res
       .status(401)
-      .json({ error: "Abr� la demo para iniciar tu espacio de prueba." });
+      .json({ error: "Abrí la demo para iniciar tu espacio de prueba." });
     return;
   }
   res.locals.visitorId = id;
@@ -164,7 +164,7 @@ function fail(res: express.Response, error: unknown) {
 app.post("/api/chat", async (req, res) => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Petici�n inv�lida." });
+    res.status(400).json({ error: "Petición inválida." });
     return;
   }
   try {
@@ -177,14 +177,14 @@ app.post("/api/chat", async (req, res) => {
       res
         .status(429)
         .json({
-          error: "Se alcanz� un l�mite de uso de la demo. Prob� m�s tarde.",
+          error: "Se alcanzó un límite de uso de la demo. Probá más tarde.",
         });
       return;
     }
     const data = await workspace(res.locals.visitorId, async (agent) => {
       if (parsed.data.sessionId && !agent.sessions.has(parsed.data.sessionId)) {
         res.status(404);
-        throw new Error("Sesi�n inexistente en este espacio.");
+        throw new Error("Sesión inexistente en este espacio.");
       }
       const s = await agent.session(parsed.data.sessionId);
       return agent.turn(s, parsed.data.message, parsed.data.confirmation);
@@ -192,7 +192,7 @@ app.post("/api/chat", async (req, res) => {
     res.json(data);
   } catch (e) {
     if (res.statusCode === 404)
-      res.json({ error: "Sesi�n inexistente en este espacio." });
+      res.json({ error: "Sesión inexistente en este espacio." });
     else fail(res, e);
   }
 });
@@ -205,7 +205,7 @@ app.post("/api/demo/reset", async (req, res) => {
   }
   try {
     if (!(await takeRate("reset:" + res.locals.visitorId, 3, 60))) {
-      res.status(429).json({ error: "Esper� antes de reiniciar nuevamente." });
+      res.status(429).json({ error: "Esperá antes de reiniciar nuevamente." });
       return;
     }
     await workspace(res.locals.visitorId, async (agent) => {
@@ -284,7 +284,7 @@ app.get("/api/master", async (_req, res) => {
       res.locals.visitorId,
       async () => {
         const data = await rows({ directory, sessionId: "master" });
-        // Solo la descarga se neutraliza; el maestro can�nico conserva los datos originales.
+        // Solo la descarga se neutraliza; el maestro canónico conserva los datos originales.
         return exportCsv(data);
       },
       true,

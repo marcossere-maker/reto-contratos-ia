@@ -30,3 +30,10 @@
 - Suite ampliada: 11/11 pruebas aprobadas, incluyendo dos visitantes aislados, rechazo de confirmación ajena, reset limitado al propietario, descargas sin cookie rechazadas, firma y expiración, CSRF, 404, cabeceras ante JSON inválido, CSV malicioso y cuota 429.
 - Migración `reto02_isolated_visitors_and_shared_limits` aplicada al proyecto separado; snapshot anterior conservado.
 - Asesor de seguridad de Supabase después de la migración: sin avisos.
+
+- Publicación `dpl_rXoGfBc2ophFPfvEipCAPqTNtVBR`, código `057004f`: READY y alias público actualizado.
+- `PUBLIC_VISITOR_SECURITY_OK`: Groq/Qwen real, 4.177 tokens y 20 llamadas (19 operaciones internas y la coordinación del lote); 10 contratos, 5 mensajes procesados y msg-006 pendiente.
+- Dos espacios nuevos en Supabase: sesión y confirmación ajenas devuelven 404, reset B conserva los 5 mensajes procesados de A, y la confirmación pendiente se recupera desde la base. Solo se reinició el espacio B creado por la prueba.
+- En la URL pública: descargas sin cookie 401, rutas inexistentes y sensibles 404, CSP y X-Frame-Options en HTML y JS, CORS restringido, JSON inválido 400 con cabeceras, POST de otro origen 403 y cuota compartida 429.
+
+- `LIVE_RLS_OK`: contra la API real de Supabase, clave publicable y token inventado no leen estado, vistas ni cuotas; tampoco crean un espacio con hash inventado ni ejecutan RPC de inicialización o cuotas.

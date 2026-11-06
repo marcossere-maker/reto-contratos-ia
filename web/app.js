@@ -284,7 +284,7 @@ async function boot() {
     if (!response.ok) throw new Error(h.error);
     if (h.storage === "supabase")
       document.querySelector(".footnote").textContent =
-        "Tu espacio de prueba se guarda en Supabase por separado. Este navegador lo recupera durante 7 d�as; borrar cookies pierde el acceso.";
+        "Tu espacio de prueba se guarda en Supabase por separado. Este navegador lo recupera durante 7 días; borrar cookies pierde el acceso.";
     document.querySelector("#mode-notice").textContent =
       h.provider === "mock"
         ? "Demostración: seis correos ficticios y un flujo programado. No hay conexión a un correo real ni a un modelo de IA."
