@@ -11,6 +11,7 @@
 ## Verificaciones pendientes
 
 - Qwen real verificado: `qwen/qwen3.8-27b` en Groq respondió correctamente, procesó los seis correos mediante herramientas y produjo el resumen con confirmación pendiente. La confirmación del operador completó el sexto caso. Una ejecución del lote consumió 4.354 tokens en total. La clave se configuró cifrada en Vercel y está excluida de los archivos entregables.
+- Prueba sobre la URL pública con Groq activo: `PUBLIC_GROQ_OK`, 4.032 tokens, 5 llamadas de herramientas para el correo todavía pendiente, respuesta en español y confirmación requerida. Se conservaron los 10 contratos y los 5 correos procesados previos; no se confirmó ni registró el caso dudoso en producción.
 - Vercel: URL pública https://reto-contratos-ia.vercel.app. Se retiró la protección exclusivamente de este proyecto, después de la aprobación explícita del candidato. Se probó el flujo completo desde el enlace sin autenticación, incluida revisión, confirmación y descargas. Resultado: 11 contratos, 6 mensajes procesados y 1 sesión, revisión 5.
 - Vertex AI, Bedrock, buzón real, PDF/OCR y SharePoint: diseño o trabajo futuro, no integraciones implementadas.
 
