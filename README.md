@@ -4,6 +4,8 @@ Aplicación del reto 02: chat, ciclo de agente con herramientas, extracción det
 
 **Demo pública:** https://reto-contratos-ia.vercel.app · Qwen real vía Groq · persistencia en Supabase.
 
+**Repositorio público:** https://github.com/marcossere-maker/reto-contratos-ia
+
 Las credenciales se configuran únicamente en el backend. Este repositorio contiene `.env.example` con valores de ejemplo y campos vacíos; el archivo `.env` y los datos generados están excluidos. Para ejecutar tu propia copia, usá tus claves y tu entorno de datos.
 
 ## Probar en local
