@@ -168,7 +168,15 @@ export const leer_buzon = wrapped(
             const d = await document(ctx, id);
             return { ...d.correo, tiene_contrato: !!d.attachment };
           } catch {
-            return { id, de: "", asunto: "Mensaje no legible", fecha: "", adjuntos: [], tiene_contrato: false, error: "Revisar el archivo de correo o su adjunto." };
+            return {
+              id,
+              de: "",
+              asunto: "Mensaje no legible",
+              fecha: "",
+              adjuntos: [],
+              tiene_contrato: false,
+              error: "Revisar el archivo de correo o su adjunto.",
+            };
           }
         }),
       ),

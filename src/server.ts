@@ -1,5 +1,6 @@
 import express from "express";
 import path from "node:path";
+import { promises as fs } from "node:fs";
 import { z } from "zod";
 import { Agent } from "./agent.js";
 import { init, output } from "./storage.js";
@@ -25,6 +26,29 @@ const body = z.object({
 });
 const rates = new Map<string, { ts: number; n: number }>();
 let queue = Promise.resolve();
+app.post("/api/demo/reset", async (req, res) => {
+  if (req.body?.confirm !== "reiniciar-datos-ficticios") {
+    res
+      .status(400)
+      .json({ error: "Falta confirmar el reinicio de los datos ficticios." });
+    return;
+  }
+  const run = async () => {
+    try {
+      await fs.rm(output({ directory, sessionId: "reset" }), {
+        recursive: true,
+        force: true,
+      });
+      await init({ directory, sessionId: "reset" });
+      agent.sessions.clear();
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "No se pudo reiniciar la demo." });
+    }
+  };
+  queue = queue.then(run, run);
+  await queue;
+});
 app.post("/api/chat", async (req, res) => {
   const parsed = body.safeParse(req.body);
   if (!parsed.success) {

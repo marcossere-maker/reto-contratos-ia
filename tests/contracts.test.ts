@@ -13,14 +13,29 @@ import type { LlmAdapter } from "../src/llm/adapter.js";
 test("Un correo corrupto no impide listar ni procesar los demás", async () => {
   const ctx = await setup();
   try {
-    await fs.writeFile(path.join(ctx.directory, "fixtures/reto-02/buzon/msg-001/correo.json"), "{");
-    const inbox = await call<{mensajes: {id: string;error?: string}[]}>(ctx, "contratos_leer_buzon", {});
+    await fs.writeFile(
+      path.join(ctx.directory, "fixtures/reto-02/buzon/msg-001/correo.json"),
+      "{",
+    );
+    const inbox = await call<{ mensajes: { id: string; error?: string }[] }>(
+      ctx,
+      "contratos_leer_buzon",
+      {},
+    );
     assert.ok(inbox.ok);
     assert.equal(inbox.data.mensajes.length, 6);
     assert.ok(inbox.data.mensajes[0].error);
-    assert.equal((await call(ctx, "contratos_extraer", {mensaje_id: "msg-001"})).ok, false);
-    assert.equal((await call(ctx, "contratos_extraer", {mensaje_id: "msg-002"})).ok, true);
-  } finally { await fs.rm(ctx.directory, {recursive:true, force:true}); }
+    assert.equal(
+      (await call(ctx, "contratos_extraer", { mensaje_id: "msg-001" })).ok,
+      false,
+    );
+    assert.equal(
+      (await call(ctx, "contratos_extraer", { mensaje_id: "msg-002" })).ok,
+      true,
+    );
+  } finally {
+    await fs.rm(ctx.directory, { recursive: true, force: true });
+  }
 });
 async function setup(): Promise<Ctx> {
   const directory = await fs.mkdtemp(path.join(process.cwd(), ".test-run-"));

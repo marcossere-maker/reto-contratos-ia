@@ -41,6 +41,7 @@ También admite Alibaba Model Studio: `LLM_PROVIDER=qwen`, `LLM_MODEL=qwen3.5-pl
 - `GET /api/sessions/:id`: historial visible y revisiones de esa sesión.
 - `GET /api/health`: proveedor, modelo y estado de configuración; nunca devuelve credenciales.
 - `GET /api/report`: descarga el último `alertas.md`.
+- `POST /api/demo/reset`: `{confirm:"reiniciar-datos-ficticios"}` restaura los datos de prueba y vacía las conversaciones. El botón pide confirmación; afecta al entorno compartido. No reinicia el límite diario de tokens.
 
 Sesiones y límites de gasto viven en memoria. Hay un único escritor HTTP por proceso para proteger el CSV. No escalar a varias instancias sin cambiar persistencia y coordinación. Cada herramienta retorna un string JSON `{ok,data}` o `{ok:false,error}`, con argumentos zod. Las herramientas son importables sin servidor.
 

@@ -130,13 +130,33 @@ document.querySelector("#new-session").addEventListener("click", () => {
   sessionStorage.removeItem("contratos-session");
   location.reload();
 });
+document.querySelector("#reset-demo").addEventListener("click", async () => {
+  if (
+    !confirm(
+      "¿Reiniciar los datos ficticios? Se borrarán los registros y conversaciones de esta demo compartida.",
+    )
+  )
+    return;
+  try {
+    const response = await fetch("/api/demo/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: "reiniciar-datos-ficticios" }),
+    });
+    if (!response.ok) throw new Error("No se pudo reiniciar la demo.");
+    sessionStorage.removeItem("contratos-session");
+    location.reload();
+  } catch (e) {
+    bubble("assistant", e.message);
+  }
+});
 async function boot() {
   try {
     const h = await (await fetch("/api/health")).json();
     document.querySelector("#provider").textContent =
       h.provider === "mock"
         ? "Práctica guiada · sin IA"
-        : h.model + (h.configured ? " · conectado" : " · falta configurar");
+        : h.model + (h.configured ? " · configurado" : " · falta configurar");
     if (sessionId) {
       const r = await fetch("/api/sessions/" + sessionId);
       if (r.ok) {
