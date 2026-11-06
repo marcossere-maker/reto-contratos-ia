@@ -2,6 +2,10 @@
 
 Aplicación del reto 02: chat, ciclo de agente con herramientas, extracción determinista, revisión humana, maestro CSV, archivo simulado y alertas. Datos ficticios; no conecta con un correo ni SharePoint real.
 
+**Demo pública:** https://reto-contratos-ia.vercel.app · Qwen real vía Groq · persistencia en Supabase.
+
+Las credenciales se configuran únicamente en el backend. Este repositorio contiene `.env.example` con valores de ejemplo y campos vacíos; el archivo `.env` y los datos generados están excluidos. Para ejecutar tu propia copia, usá tus claves y tu entorno de datos.
+
 ## Probar en local
 
 Requiere Node 24 (compatible con Node 22 reciente) y npm. Desde esta carpeta:
